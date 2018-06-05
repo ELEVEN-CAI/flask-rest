@@ -1,0 +1,221 @@
+1. 回顾Rest接口写法
+
+   1）请求 － 》 响应
+      资源      结果
+
+      资源：  uri  类似于路由
+      动作：  post  新增资源
+             put   修改某一资源(某一属性)
+             patch 修改多个资源（多个属性）
+             delete 删除资源
+             get    查询资源
+
+      结果： json数据
+            jsonify({})
+            json.dumps(obj, cls)   cls 自定义JSONEncoder
+
+            如果数据是list[xxxModel]包含object类对象,
+            则自定义object转json的编码器（JSONEncoder）或
+            声明@propery def json(self): return {}
+
+2. flask-restful 扩展库
+
+   1） pip install flask-restful
+   2) 创建 Api(app)
+      from flask_restful import Api
+
+      api = Api(app)
+
+   3) 创建 Resource 子类 ：Resource是flask_restful中的类
+
+     class UserApi(Resource):
+        def get(self):  # rest 的get请求动作
+            pass
+        def post(self):
+            pass
+        def put(self):
+            pass
+        def patch(self):
+            pass
+        def delete(self):
+            pass
+   4) 将Resource资源添加到api对象中
+
+        api.add_source(UserApi, '/user/', endpoint='user')
+
+
+3. flask-sqlacodegen 第三方扩展库的使用
+   作用： 从数据库端， 将库中的表生成flask-sqlalchemy相关的模型类
+   1）pip install flask-sqlacodegen
+
+   2) pip install flask-pymysql flask-sqlalchemy
+
+   3) 使用flask-sqlacodegen命令 导出表的模型类
+      flask-sqlacodegen --outfile models.py mysql+pymysql://root:root@127.0.0.1:3306/users
+
+   4) 声明 dao.py
+      说明 DAO：  数据访问对象，封装对所有模型类的CRUD操作
+
+      a) 创建 SQLAlchemy对象
+
+        db = SQLAlchemy(app)
+
+      b) 声明相关的函数来实现CRUD的操作
+        def query(cls):  # 返回BaseQuery对象
+           return  db.session.query(cls)
+
+        def delete(obj):
+            db.session.delete(obj)
+            db.session.commit()
+
+        def add(obj):  # 添加 或 更新
+            db.session.add(obj)
+            db.session.commit()
+
+   5） 在apis.py文件中，导入dao.py和models.py
+
+   任务： 实现删除操作
+         优化dao中函数
+
+4.flask-restful
+    1) rest是一种设计规范，为了适应前后端分离（移动端和服务端）,让请求的数据最小化、速度最优化。
+    提供了资源（Resource）、uri(统一资源标识符)　和　动作等概念。
+
+    2)在服务端（flask项目）提供一个api.py声明对Resource的操作
+
+    class UserResource(Resource):
+        #from flask_restful import Resource(类)
+
+        #声明相关的动作（get, post, put, delete, patch ）
+        def get(self):
+            return {}
+
+    3)为资源添加一个uri
+        api = Api(app)
+        api.add_resource(UserResource, '/user/'
+
+    4)定制输入和输出
+        定制输入
+        # from flask_restful import reqparse(类)
+
+        parser = reqparse.RequestParser()　＃解析器
+        ＃添加输入(请求)参数的说明
+        parser.add_argument('参数名',
+                            type=int/str,
+                            required=True,
+                            help='验证失败的消息'，
+                            location='参数来源(args,file,form,cookies)')
+        #在动作处理函数中，通过parse_args()函数验证请求参数是否满足条件
+        def get(self):
+            self.parser.parse_args()　＃不满足，自动中断请求
+
+            ＃满足参数条件，业务的实现
+
+            xx = args.get('参数名')
+
+            return {}
+
+        ＃定制输出参数
+        from flask_restful import marshal_with,marshal, feilds
+        #声明users列表中每个元素(User类对象)的输出格式
+        user_fields = {'id':fields.Integer,
+                        'name':fields.String,
+                        'phone':fields,String}
+
+        out_fields = {'msg':fields.String,
+                      'data':fields.Nested(user_field}
+
+        1)@marshl_with(fields)  #声明输出的字段
+            def get(self):
+                data = {'msg':'', 'data':users} #users=[<class User>,<class User>]
+
+        2)marshal(data,fields)
+
+            def get(self):
+                data = {'msg':'',data:users}
+                return marshal(data,self.out_fields)
+5 文件上传
+    前段核心代码
+        function upLoading(file){
+            var formdata = new Formdata()　＃默认为multipart/form-data /(enctype编码类型)
+            formdata.append('参数'，file)}  #file是js的文件类对象
+
+            $.ajax('/upload/',{
+                type:'post',
+                data:formdata,
+                contentType:false, //对上传的数据不做任何编码处理
+                processData:false,　// 同上，不做任何数据处理
+                dataType:'json'
+                sucess:function(data){
+                    //文件上传成功后的回调函数
+                }
+            })
+    后端：
+        class UploadApi(Resource):
+
+            parser = reqparse.RequestParser()
+
+            # from werkzeug.datastructures import FileStorage
+            parser.add_argument('img',type=FileStorage)
+
+            def post(self):
+                args = self.parser.parse_args()
+
+                uFile = args.get('img')
+
+                uFile.save('/users/rfc/uploads/'+uFile.filename)
+
+                return {}
+
+            扩展：在settings.py文件，设计BASE_DIR, STATIC_DIR/MEDIA_DIR
+                1)　获取settings.py文件的绝对路径：
+                    abspath = os.path.abspath(__name__)
+
+                2) 获取settings.py所在目录
+                    base_dir = os.path.dirname(abspath)
+
+                3)　获取settings.py所在目录的static目录
+                    static_dir = os.path.join(static_dir, 'static')
+
+                4)　获取settings.py所在目录的static目录的uploads位置
+                    media_dir = os.path.join(static_dir, 'uploads')
+
+                ５）xml数据结构　json数据结构
+                　
+2.pycharm中使用git工具将项目提交到github项目
+    which git ->/usr/bin/git
+
+ 1)打开pycharm工具,
+
+    File→Settings→Version Control
+        ①　git :  path to Git executable:   /usr/bin/git
+        ②　github : 输入用户名密码连接
+
+    window环境，需要将git命令所在的位置配置到环境变量中
+
+ ２）在github创建一个仓库
+    将仓库的位置：http://sss/xx.git
+
+ 3) 在项目根目录下，
+
+    git config -l 查看配置
+    git status （.idea/是环境配置(红色)　表不提交，即不上传这个文件）
+
+ ４）git init
+    git remote add origin https://github.com/azongheng/flask-rest.git
+
+ 5)在本地仓库添加文件
+    git add .  或　git add *  (绿色表示跟踪状态)
+
+    注意：不要添加.idea文件目录（包含了当前开发环境的配置文件）
+
+ ６）提交并推送到github远程仓库中
+    git commit -m  '初始化提交flask-rest项目'
+
+    ＃　第一次上传时，因为远程仓库不存在master主分支
+    git push --set-upstream origin master
+
+    git push origin master
+
+
+
