@@ -19,6 +19,9 @@ class ExcelUtil(object):
 		with open(dir_path, 'r') as f:
 			return f.read()
 
+	def generate_excel_model(self):
+		pass
+
 	def task(self):
 		pass
 
@@ -26,4 +29,3 @@ class ExcelUtil(object):
 if __name__ == '__main__':
 	with ExcelUtil() as eu:
 		eu.task()
-
