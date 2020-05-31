@@ -4,7 +4,7 @@
 class ExcelUtil(object):
 
 	def __int__(self):
-		pass
+		self.content = None
 
 	def __enter__(self):
 		return self
