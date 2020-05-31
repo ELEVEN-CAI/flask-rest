@@ -12,7 +12,7 @@ class ExcelUtil(object):
 
 	def __exit__(self, exc_type, exc_val, exc_tb):
 		if all([exc_type, exc_val, exc_tb]):
-			print('error')
+			print(exc_val)
 		return True
 
 	@staticmethod
