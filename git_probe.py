@@ -5,6 +5,7 @@ class ExcelUtil(object):
 
 	def __int__(self):
 		self.content = None
+		self.data = None
 
 	def __enter__(self):
 		return self
